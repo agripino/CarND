@@ -66,8 +66,20 @@ target/
 
 # Gzip compressed files
 **/*.gz
-*/*~
+
+# Backup files
+*~
+**/*~
 
 # Pickle files
 **/*.p
+
+# JPG files
+**/*.jpg
+
+# ZIP files
+**/*.zip
+
+#CSV files
+**/*.csv
 
