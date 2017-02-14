@@ -6,8 +6,9 @@ import shutil
 
 import numpy as np
 import socketio
-import eventlet
-import eventlet.wsgi
+from socketio import Middleware
+from eventlet import listen
+from eventlet.wsgi import server
 from PIL import Image
 from flask import Flask
 from io import BytesIO
@@ -33,6 +34,7 @@ def telemetry(sid, data):
         imgString = data["image"]
         image = Image.open(BytesIO(base64.b64decode(imgString)))
         image_array = np.asarray(image)
+        print(image_array.shape)
         steering_angle = float(model.predict(image_array[None, :, :, :], batch_size=1))
         throttle = 0.2
         print(steering_angle, throttle)
@@ -45,6 +47,7 @@ def telemetry(sid, data):
             image.save('{}.jpg'.format(image_filename))
     else:
         # NOTE: DON'T EDIT THIS.
+        print("Manual")
         sio.emit('manual', data={}, skip_sid=True)
 
 
@@ -94,7 +97,7 @@ if __name__ == '__main__':
         print("NOT RECORDING THIS RUN ...")
 
     # wrap Flask application with engineio's middleware
-    app = socketio.Middleware(sio, app)
+    app = Middleware(sio, app)
 
     # deploy as an eventlet WSGI server
-    eventlet.wsgi.server(eventlet.listen(('', 4567)), app)
+    server(listen(('127.0.0.1', 4567)), app)
