@@ -142,7 +142,7 @@ to the training algorithm. For example, here is an image that has then been flip
 
 The data augmentation was performed in real-time using a Python generator and the appropriate Keras methods.
 
-After the collection process, I had 17373 data points, not including the augmented data. The data was processed by cropping
+After the collection process, I had 34110 data points, not including the augmented data. The data was processed by cropping
 the region of interest corresponding to the road and scaling each pixel to the range [-0.5, 0.5].
 
 I finally randomly shuffled the data set and put 20% of the data into a validation set. More 20% of that training dataset
