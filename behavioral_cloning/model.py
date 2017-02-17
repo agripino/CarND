@@ -40,7 +40,7 @@ def generator(samples, batch_size=32):
             angles = []
             for batch_sample in batch_samples:
                 # Correction to be applied to right and left cameras
-                correction = 0.20
+                correction = 0.18
 
                 # Change this directory string in your machine
                 name = '/home/agripino/IMG/' + batch_sample[0].split('/')[-1]
