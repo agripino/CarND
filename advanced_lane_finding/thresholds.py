@@ -59,11 +59,12 @@ def dir_thresh(img, sobel_kernel=3, thresh=(0, np.pi / 2)):
     grad_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
     grad_y = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=sobel_kernel)
 
-    # Take the absolute value of the x and y gradients
+    # Take the absolute value of the x and y gradients.
+    # Makes the definition of thresholds easier
     abs_x = np.absolute(grad_x)
     abs_y = np.absolute(grad_y)
 
-    # Use np.arctan2(abs_y, abs_x) to calculate the direction of the gradient
+    # Calculate the direction of the gradient
     grad_dir = np.arctan2(abs_y, abs_x)
 
     # Create a binary mask where direction thresholds are met
