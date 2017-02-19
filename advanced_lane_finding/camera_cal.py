@@ -15,10 +15,16 @@ all_obj_points = []
 # Corresponding points in image space
 all_img_points = []
 
+# Image shape
+img_shape = None
+
 for image in images:
     img = cv2.imread(image, cv2.IMREAD_UNCHANGED)
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    if img_shape is None:
+        img_shape = gray.shape
 
     # Search for patterns in the cartesian product [9, 8, 7, 6]x[6, 5, 4]
     for pattern in [(nx, ny) for ny in [6, 5, 4] for nx in [9, 8, 7, 6]]:
@@ -42,13 +48,16 @@ for image in images:
             # Adjust corners to sub pixel accuracy
             sub_pixel_corners = cv2.cornerSubPix(gray, corners, (11, 11),
                                                  (-1, -1), criteria)
+
             all_img_points.append(sub_pixel_corners)
             break
 
 ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(all_obj_points,
                                                    all_img_points,
-                                                   gray.shape[::-1],
+                                                   img_shape[::-1],
                                                    None, None)
+print("\nCamera matrix:\n{}\n".format(mtx))
+print("Distortion coefficients:\n{}".format(dist))
 
 # Collect calibration data in a dictionary
 cal_data = {"camera_mtx": mtx, "dist_coeffs": dist}
