@@ -46,13 +46,13 @@ def hsv_v_thresh(img, thresh=(0, 255)):
 
 
 if __name__ == "__main__":
-    image = cv2.imread("./test_images/test4.jpg", cv2.IMREAD_UNCHANGED)
+    image = cv2.imread("./test_images/test6.jpg", cv2.IMREAD_UNCHANGED)
 
-    hls_thresh = hls_s_thresh(image, (150, 255))
-    rgb_thresh = rgb_r_thresh(image, (230, 255))
+    hls_thresh = hls_s_thresh(image, (120, 255))
+    rgb_thresh = rgb_r_thresh(image, (200, 255))
 
     hsv_h = hsv_h_thresh(image, (20, 40))
-    hsv_v = hsv_v_thresh(image, (220, 255))
+    hsv_v = hsv_v_thresh(image, (210, 255))
 
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3)
     ax1.imshow(hls_thresh, cmap="gray")

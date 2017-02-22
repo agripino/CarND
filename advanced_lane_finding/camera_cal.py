@@ -57,11 +57,13 @@ ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(all_obj_points,
                                                    img_shape[::-1],
                                                    None, None)
 print("\nCamera matrix:\n{}\n".format(mtx))
-print("Distortion coefficients:\n{}".format(dist))
+print("Distortion coefficients:\n{}\n".format(dist))
 
 # Collect calibration data in a dictionary
 cal_data = {"camera_mtx": mtx, "dist_coeffs": dist}
 
 # Store calibration data for future use
-with open("cal_data.p", "wb") as f:
+cal_data_file = "cal_data.p"
+with open(cal_data_file, "wb") as f:
     pickle.dump(cal_data, f)
+    print("Calibration data saved to {}".format(cal_data_file))
