@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 def hls_s_thresh(img, thresh=(0, 255)):
     # Convert to HLS color space
-    hls = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
+    hls = cv2.cvtColor(img, cv2.COLOR_RGB2HLS)
 
     # Create binary output mask
     binary_output = np.zeros_like(img[:, :, 0])
@@ -46,13 +46,13 @@ def hsv_v_thresh(img, thresh=(0, 255)):
 
 
 if __name__ == "__main__":
-    image = cv2.imread("./test_images/test6.jpg", cv2.IMREAD_UNCHANGED)
+    image = cv2.imread("./test_images/test1.jpg", cv2.IMREAD_UNCHANGED)
 
     hls_thresh = hls_s_thresh(image, (120, 255))
     rgb_thresh = rgb_r_thresh(image, (200, 255))
 
     hsv_h = hsv_h_thresh(image, (20, 40))
-    hsv_v = hsv_v_thresh(image, (210, 255))
+    hsv_v = hsv_v_thresh(image, (220, 255))
 
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3)
     ax1.imshow(hls_thresh, cmap="gray")

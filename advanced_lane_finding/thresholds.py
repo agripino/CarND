@@ -86,6 +86,6 @@ if __name__ == "__main__":
     dir_binary = dir_thresh(image, sobel_kernel=ksize, thresh=(0.7, 1.3))
 
     combined = np.zeros_like(dir_binary)
-    combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1))] = 1
+    combined[(((gradx == 1) & (grady == 1)) | (mag_binary == 1) & (dir_binary == 1))] = 1
     plt.imshow(combined, cmap="gray")
     plt.show()
