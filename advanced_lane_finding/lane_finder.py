@@ -2,6 +2,7 @@ import numpy as np
 from collections import deque
 import pickle
 import cv2
+import matplotlib.pyplot as plt
 from thresholds import dir_thresh
 from color_spaces import hls_s_thresh
 from image_warping import warp_image
@@ -12,16 +13,13 @@ class Line:
         # was the line detected in the last iteration?
         self.detected = False
 
-        # x values of the last n fits of the line
-        self.recent_x_fitted = deque(maxlen=n_last)
-
         # average x values of the fitted line over the last n iterations
         self.best_x = None
 
         # polynomial coefficients averaged over the last n iterations
         self.best_fit = None
 
-        # polynomial coefficients for the most recent fit
+        # polynomial coefficients for the last n iterations
         self.recent_fit = deque(maxlen=n_last)
 
         # radius of curvature of the line in some units
@@ -41,7 +39,7 @@ class Line:
 
 
 class LaneFinder:
-    def __init__(self, cal_file="cal_data.p", n_windows=9, margin=100, min_pix=50,
+    def __init__(self, cal_file="cal_data.p", n_windows=9, margin=50, min_pix=50,
                  n_last=5):
         # Camera matrix
         self.camera_mtx = None
@@ -58,7 +56,7 @@ class LaneFinder:
         # Minimum number of pixels in a window to update window center
         self.min_pix = min_pix
 
-        # Lane lines
+        # Left and right lane lines
         self.left_line = Line(n_last)
         self.right_line = Line(n_last)
 
@@ -67,6 +65,9 @@ class LaneFinder:
 
         # Current operational mode
         self.op_mode = "BLIND"
+
+        # Last result: OK or NOT_OK. Controls state transitions.
+        self.last_result = "OK"
 
         # Op modes transition table
         self.transition = {("BLIND", "OK"): "TRACK",
@@ -78,37 +79,44 @@ class LaneFinder:
         self.action = {"BLIND": self.blind_search,
                        "TRACK": self.track_lines}
 
-        # Current number of consecutive failed detections
+        # Current number of consecutive failed detections in TRACK mode
         self.failed_detections = 0
 
         # Maximum number of failed detections allowed before doing blind search
         self.max_failed_detections = 10
 
     def __call__(self, img):
-        """Applies the lane finding pipeline to a given image. img is a RGB image
+        """Applies the lane finding pipeline to a given image.
+        img is a RGB image
         """
         # Removes estimated camera distortion from the RGB image
-        undist = cv2.undistort(img, self.camera_mtx, self.dist_coeffs)
+        undistorted = cv2.undistort(img, self.camera_mtx, self.dist_coeffs)
 
         # Apply thresholds and get a binary image
-        binary = self.apply_thresholds(undist)
+        binary = self.apply_thresholds(undistorted)
 
-        # Warp binary image and get inverse transformation
+        # Warp binary image. Get both perspective transformation matrices
         warped, M, M_inv = self.warp_binary(binary)
 
-        # Do whatever the current states requires
+        # Do whatever the current state requires: blind_search or track_lines
         action = self.action[self.op_mode]
-
         action(warped)
 
-        # Draw lines
+        # Find polynomial coefficients for each line
+        self.fit_poly(warped)
 
-        return img
+        # Move to the next state based on current state and the last result
+        self.op_mode = self.transition[(self.op_mode, self.last_result)]
+
+        # Annotate frame with lane lines
+        annotated_frame  = self.draw_lines(warped, img)
+
+        return annotated_frame
 
     def blind_search(self, binary_warped):
-        """Searches for lane lines without previous information"""
-        histogram = np.sum(binary_warped[binary_warped.shape[0] / 2:, :],
-                           axis=0)
+        """Searches for lane lines without previous information.
+        The purpose of this method is to update the best fit coefficients for each line"""
+        histogram = np.sum(binary_warped[binary_warped.shape[0] / 2:, :], axis=0)
 
         midpoint = np.int(histogram.shape[0] / 2)
         left_x_base = np.argmax(histogram[:midpoint])
@@ -157,62 +165,89 @@ class LaneFinder:
         right_lane_inds = np.concatenate(right_lane_inds)
 
         # Extract left and right line pixel positions
-        left_x = nonzero_x[left_lane_inds]
-        left_y = nonzero_y[left_lane_inds]
-        right_x = nonzero_x[right_lane_inds]
-        right_y = nonzero_y[right_lane_inds]
+        self.left_line.allx = nonzero_x[left_lane_inds]
+        self.left_line.ally = nonzero_y[left_lane_inds]
 
-        # Fit a second order polynomial to each, but check before if the line
-        # was detected
-        if len(left_y) > 2:
-            left_fit = np.polyfit(left_y, left_x, 2)
-            self.left_line.detected = True
-            self.left_line.recent_fit.append(left_fit)
-            self.left_line.best_fit = np.mean(self.left_line.recent_fit, axis=0)
-        else:
-            self.left_line.detected = False
-            left_fit = None
-
-        if len(right_y) > 2:
-            right_fit = np.polyfit(right_y, right_x, 2)
-            self.right_line.detected = True
-            self.right_line.recent_fit.append(right_fit)
-            self.right_line.best_fit = np.mean(self.right_line.recent_fit, axis=0)
-        else:
-            self.right_line.detected = False
-            right_fit = None
+        self.right_line.allx = nonzero_x[right_lane_inds]
+        self.right_line.ally = nonzero_y[right_lane_inds]
 
     def track_lines(self, binary_warped):
+        """Searches for line pixels in a new frame using the lines fitted in previous frames"""
         # Get a pair of the row and column indices of nonzero pixels
         nonzero = binary_warped.nonzero()
         nonzero_y = np.array(nonzero[0])
         nonzero_x = np.array(nonzero[1])
 
-        left_lane_inds = ((nonzero_x > (self.left_line.best_x - self.margin)) &
-                          (nonzero_x < (self.left_line.best_x + self.margin)))
+        al, bl, cl = self.left_line.best_fit
+        ar, br, cr = self.right_line.best_fit
 
-        right_lane_inds = ((nonzero_x > (self.right_line.best_x - self.margin)) &
-                           (nonzero_x < (self.right_line.best_x + self.margin)))
+        left_lane_inds = ((nonzero_x > (al * (nonzero_y ** 2) + bl * nonzero_y + cl - self.margin)) &
+                          (nonzero_x < (al * (nonzero_y ** 2) + bl * nonzero_y + cl + self.margin)))
+
+        right_lane_inds = ((nonzero_x > (ar * (nonzero_y ** 2) + br * nonzero_y + cr - self.margin)) &
+                           (nonzero_x < (ar * (nonzero_y ** 2) + br * nonzero_y + cr + self.margin)))
 
         # Again, extract left and right line pixel positions
-        left_x = nonzero_x[left_lane_inds]
-        left_y = nonzero_y[left_lane_inds]
-        right_x = nonzero_x[right_lane_inds]
-        right_y = nonzero_y[right_lane_inds]
+        self.left_line.allx = nonzero_x[left_lane_inds]
+        self.left_line.ally = nonzero_y[left_lane_inds]
 
-        # Fit a second order polynomial to each
-        left_fit = np.polyfit(left_y, left_x, 2)
-        right_fit = np.polyfit(right_y, right_x, 2)
+        self.right_line.allx = nonzero_x[right_lane_inds]
+        self.right_line.ally = nonzero_y[right_lane_inds]
 
-        # Generate x and y values for plotting
+    def fit_poly(self, binary_image):
+        # Fit a second order polynomial to each, but check before if the line
+        # was detected
+        if len(self.left_line.ally) > 2:
+            left_fit = np.polyfit(self.left_line.ally, self.left_line.allx, 2)
+            self.left_line.detected = True
+            if self.left_line.best_fit is None or np.linalg.norm(self.left_line.best_fit - left_fit) < 40:
+                self.left_line.recent_fit.append(left_fit)
+            self.left_line.best_fit = np.mean(self.left_line.recent_fit, axis=0)
+            a, b, c = self.left_line.best_fit
+            plot_y = np.linspace(0, binary_image.shape[0] - 1, binary_image.shape[0])
+            self.left_line.best_x = a * plot_y ** 2 + b * plot_y + c
+        else:
+            self.left_line.detected = False
+
+        if len(self.right_line.ally) > 2:
+            right_fit = np.polyfit(self.right_line.ally, self.right_line.allx, 2)
+            self.right_line.detected = True
+            if self.right_line.best_fit is None or np.linalg.norm(self.right_line.best_fit - right_fit) < 40:
+                self.right_line.recent_fit.append(right_fit)
+            self.right_line.best_fit = np.mean(self.right_line.recent_fit, axis=0)
+            a, b, c = self.right_line.best_fit
+            plot_y = np.linspace(0, binary_image.shape[0] - 1, binary_image.shape[0])
+            self.right_line.best_x = a * plot_y ** 2 + b * plot_y + c
+        else:
+            self.right_line.detected = False
+
+        # Update result: OK if both lines were detected and NOT_OK otherwise
+        self.last_result = "OK" if self.left_line.detected and self.right_line.detected else "NOT_OK"
+
+    def draw_lines(self, binary_warped, image):
+        out_img = np.dstack((binary_warped, binary_warped, binary_warped)) * 255
+        window_img = np.zeros_like(out_img)
+
         plot_y = np.linspace(0, binary_warped.shape[0] - 1, binary_warped.shape[0])
-        left_fitx = left_fit[0] * plot_y ** 2 + left_fit[1] * plot_y + left_fit[2]
-        right_fitx = right_fit[0] * plot_y ** 2 + right_fit[1] * plot_y + right_fit[2]
 
-        return binary_warped
+        # Generate a polygon to illustrate the search window area
+        # And recast the x and y points into usable format for cv2.fillPoly()
+        left_line_window1 = np.array([np.transpose(np.vstack([self.left_line.best_x - self.margin, plot_y]))])
+        left_line_window2 = np.array([np.flipud(np.transpose(np.vstack([self.left_line.best_x + self.margin,
+                                                                        plot_y])))])
+        left_line_pts = np.hstack((left_line_window1, left_line_window2))
+        right_line_window1 = np.array([np.transpose(np.vstack([self.right_line.best_x - self.margin, plot_y]))])
+        right_line_window2 = np.array([np.flipud(np.transpose(np.vstack([self.right_line.best_x + self.margin,
+                                                                         plot_y])))])
+        right_line_pts = np.hstack((right_line_window1, right_line_window2))
 
-    def draw_lines(self, binary_warped):
-        pass
+        # Draw the lane onto the warped blank image
+        cv2.fillPoly(window_img, np.int_([left_line_pts]), (0, 255, 0))
+        cv2.fillPoly(window_img, np.int_([right_line_pts]), (0, 255, 0))
+
+        result = cv2.addWeighted(out_img, 1, window_img, 0.3, 0)
+
+        return result
 
     def load_cal_data(self, cal_file):
         with open(cal_file, "rb") as f:
