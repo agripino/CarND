@@ -2,7 +2,6 @@ import numpy as np
 from collections import deque
 import pickle
 import cv2
-import matplotlib.pyplot as plt
 from thresholds import dir_thresh
 from color_spaces import hls_s_thresh
 from image_warping import warp_image
@@ -109,9 +108,11 @@ class LaneFinder:
         self.op_mode = self.transition[(self.op_mode, self.last_result)]
 
         # Annotate frame with lane lines
-        annotated_frame  = self.draw_lines(warped, img)
+        annotated_frame = self.draw_lines(warped)
 
-        return annotated_frame
+        unwarped = cv2.warpPerspective(annotated_frame, M_inv, (img.shape[1], img.shape[0]))
+
+        return cv2.addWeighted(img, 1, unwarped, 0.3, 0)
 
     def blind_search(self, binary_warped):
         """Searches for lane lines without previous information.
@@ -199,9 +200,11 @@ class LaneFinder:
         # was detected
         if len(self.left_line.ally) > 2:
             left_fit = np.polyfit(self.left_line.ally, self.left_line.allx, 2)
-            self.left_line.detected = True
-            if self.left_line.best_fit is None or np.linalg.norm(self.left_line.best_fit - left_fit) < 40:
+            if self.left_line.best_fit is None or np.linalg.norm(self.left_line.best_fit - left_fit) < 60:
                 self.left_line.recent_fit.append(left_fit)
+                self.left_line.detected = True
+            else:
+                self.left_line.detected = False
             self.left_line.best_fit = np.mean(self.left_line.recent_fit, axis=0)
             a, b, c = self.left_line.best_fit
             plot_y = np.linspace(0, binary_image.shape[0] - 1, binary_image.shape[0])
@@ -211,9 +214,11 @@ class LaneFinder:
 
         if len(self.right_line.ally) > 2:
             right_fit = np.polyfit(self.right_line.ally, self.right_line.allx, 2)
-            self.right_line.detected = True
-            if self.right_line.best_fit is None or np.linalg.norm(self.right_line.best_fit - right_fit) < 40:
+            if self.right_line.best_fit is None or np.linalg.norm(self.right_line.best_fit - right_fit) < 60:
                 self.right_line.recent_fit.append(right_fit)
+                self.right_line.detected = True
+            else:
+                self.right_line.detected = False
             self.right_line.best_fit = np.mean(self.right_line.recent_fit, axis=0)
             a, b, c = self.right_line.best_fit
             plot_y = np.linspace(0, binary_image.shape[0] - 1, binary_image.shape[0])
@@ -224,9 +229,8 @@ class LaneFinder:
         # Update result: OK if both lines were detected and NOT_OK otherwise
         self.last_result = "OK" if self.left_line.detected and self.right_line.detected else "NOT_OK"
 
-    def draw_lines(self, binary_warped, image):
+    def draw_lines(self, binary_warped):
         out_img = np.dstack((binary_warped, binary_warped, binary_warped)) * 255
-        window_img = np.zeros_like(out_img)
 
         plot_y = np.linspace(0, binary_warped.shape[0] - 1, binary_warped.shape[0])
 
@@ -236,18 +240,23 @@ class LaneFinder:
         left_line_window2 = np.array([np.flipud(np.transpose(np.vstack([self.left_line.best_x + self.margin,
                                                                         plot_y])))])
         left_line_pts = np.hstack((left_line_window1, left_line_window2))
+
         right_line_window1 = np.array([np.transpose(np.vstack([self.right_line.best_x - self.margin, plot_y]))])
         right_line_window2 = np.array([np.flipud(np.transpose(np.vstack([self.right_line.best_x + self.margin,
                                                                          plot_y])))])
         right_line_pts = np.hstack((right_line_window1, right_line_window2))
 
         # Draw the lane onto the warped blank image
-        cv2.fillPoly(window_img, np.int_([left_line_pts]), (0, 255, 0))
-        cv2.fillPoly(window_img, np.int_([right_line_pts]), (0, 255, 0))
+        cv2.fillPoly(out_img, np.int_([left_line_pts]), (0, 255, 0))
+        cv2.fillPoly(out_img, np.int_([right_line_pts]), (0, 255, 0))
 
-        result = cv2.addWeighted(out_img, 1, window_img, 0.3, 0)
+        cv2.polylines(out_img, [np.int32(list(zip(self.left_line.best_x, plot_y)))], False, (255, 255, 0), 5)
+        cv2.polylines(out_img, [np.int32(list(zip(self.right_line.best_x, plot_y)))], False, (255, 255, 0), 5)
 
-        return result
+        out_img[self.left_line.ally, self.left_line.allx] = [255, 0, 0]
+        out_img[self.right_line.ally, self.right_line.allx] = [0, 0, 255]
+
+        return out_img
 
     def load_cal_data(self, cal_file):
         with open(cal_file, "rb") as f:
