@@ -205,7 +205,10 @@ class LaneFinder:
                 self.left_line.detected = True
             else:
                 self.left_line.detected = False
-            self.left_line.best_fit = np.mean(self.left_line.recent_fit, axis=0)
+
+            self.left_line.best_fit = np.average(self.left_line.recent_fit,
+                                                 weights=range(1, len(self.left_line.recent_fit)+1),
+                                                 axis=0)
             a, b, c = self.left_line.best_fit
             plot_y = np.linspace(0, binary_image.shape[0] - 1, binary_image.shape[0])
             self.left_line.best_x = a * plot_y ** 2 + b * plot_y + c
@@ -219,7 +222,10 @@ class LaneFinder:
                 self.right_line.detected = True
             else:
                 self.right_line.detected = False
-            self.right_line.best_fit = np.mean(self.right_line.recent_fit, axis=0)
+
+            self.right_line.best_fit = np.average(self.right_line.recent_fit,
+                                                  weights=range(1, len(self.right_line.recent_fit)+1),
+                                                  axis=0)
             a, b, c = self.right_line.best_fit
             plot_y = np.linspace(0, binary_image.shape[0] - 1, binary_image.shape[0])
             self.right_line.best_x = a * plot_y ** 2 + b * plot_y + c
