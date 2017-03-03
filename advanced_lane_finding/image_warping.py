@@ -10,8 +10,15 @@ def warp_image(bin_image):
     # Height
     h = bin_image.shape[0]
 
-    src = np.float32([[0.2313*w, 0.9542*h], [0.8570*w, 0.9542*h], [0.5885*w, 0.6639*h], [0.4435*w, 0.6639*h]])
-    dst = np.float32([[0.2313*w, 0.9542*h], [0.8570*w, 0.9542*h], [0.8570*w, 0], [0.2313*w, 0]])
+    src = np.float32([[(w / 2) - 55, h / 2 + 100],
+                      [((w / 6) - 10), h],
+                      [(w * 5 / 6) + 60, h],
+                      [(w / 2 + 55), h / 2 + 100]])
+
+    dst = np.float32([[(w / 4), 0],
+                      [(w / 4), h],
+                      [(w * 3 / 4), h],
+                      [(w * 3 / 4), 0]])
 
     M = cv2.getPerspectiveTransform(src, dst)
     Minv = cv2.getPerspectiveTransform(dst, src)
