@@ -3,7 +3,7 @@ from moviepy.editor import VideoFileClip
 
 
 # A LaneFinder object is callable
-adv_lane_finder = LaneFinder(n_last=5)
+adv_lane_finder = LaneFinder(n_last=15)
 
 input_path = "./videos/project_video.mp4"
 output_path = "./videos/project_video_annotated.mp4"
