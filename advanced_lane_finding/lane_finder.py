@@ -2,13 +2,12 @@ import numpy as np
 from collections import deque
 import pickle
 import cv2
-from thresholds import dir_thresh
-from color_spaces import hls_s_thresh
+from color_spaces import hsv_v_thresh
 from image_warping import warp_image
 
 
 class Line:
-    def __init__(self, n_last=5):
+    def __init__(self, n_last=10):
         # was the line detected in the last iteration?
         self.detected = False
 
@@ -24,9 +23,6 @@ class Line:
         # radius of curvature of the line in some units
         self.radius_of_curvature = None
 
-        # distance in meters of vehicle center from the line
-        self.line_base_pos = None
-
         # difference in fit coefficients between last and new fits
         self.diffs = np.array([0, 0, 0], dtype='float')
 
@@ -38,7 +34,7 @@ class Line:
 
 
 class LaneFinder:
-    def __init__(self, cal_file="cal_data.p", n_windows=9, margin=50, min_pix=50,
+    def __init__(self, cal_file="cal_data.p", n_windows=9, margin=100, min_pix=50,
                  n_last=5):
         # Camera matrix
         self.camera_mtx = None
@@ -79,10 +75,14 @@ class LaneFinder:
                        "TRACK": self.track_lines}
 
         # Current number of consecutive failed detections in TRACK mode
-        self.failed_detections = 0
+        self.consecutive_failures = 0
 
         # Maximum number of failed detections allowed before doing blind search
-        self.max_failed_detections = 10
+        self.max_failures = 5
+
+        self.ym_pix = 30. / 720
+
+        self.xm_pix = 3.7 / 700
 
     def __call__(self, img):
         """Applies the lane finding pipeline to a given image.
@@ -112,7 +112,15 @@ class LaneFinder:
 
         unwarped = cv2.warpPerspective(annotated_frame, M_inv, (img.shape[1], img.shape[0]))
 
-        return cv2.addWeighted(img, 1, unwarped, 0.3, 0)
+        font = cv2.FONT_HERSHEY_COMPLEX
+        color = (0, 255, 100)
+        cv2.putText(img, "Radius of curvature: {:.0f} m".format((self.left_line.radius_of_curvature +
+                                                                self.right_line.radius_of_curvature) / 2),
+                    (360, 50), font, 1, color, thickness=2)
+        cv2.putText(img, "Distance to center: {:.2f} m".format(self.compute_distances()),
+                    (360, 100), font, 1, color, thickness=2)
+
+        return cv2.addWeighted(img, 1, unwarped, 0.2, 0)
 
     def blind_search(self, binary_warped):
         """Searches for lane lines without previous information.
@@ -200,37 +208,49 @@ class LaneFinder:
         # was detected
         if len(self.left_line.ally) > 2:
             left_fit = np.polyfit(self.left_line.ally, self.left_line.allx, 2)
-            if self.left_line.best_fit is None or np.linalg.norm(self.left_line.best_fit - left_fit) < 60:
+            if self.left_line.best_fit is None or np.linalg.norm(self.left_line.best_fit - left_fit) < 200:
                 self.left_line.recent_fit.append(left_fit)
+                self.left_line.best_fit = np.average(self.left_line.recent_fit,
+                                                     weights=range(1, len(self.left_line.recent_fit) + 1),
+                                                     axis=0)
+                a, b, c = self.left_line.best_fit
+                self.left_line.radius_of_curvature = self.compute_roc(a, b)
+                plot_y = np.linspace(0, binary_image.shape[0] - 1, binary_image.shape[0])
+                self.left_line.best_x = a * plot_y ** 2 + b * plot_y + c
                 self.left_line.detected = True
+                self.consecutive_failures = 0
             else:
                 self.left_line.detected = False
-
-            self.left_line.best_fit = np.average(self.left_line.recent_fit,
-                                                 weights=range(1, len(self.left_line.recent_fit)+1),
-                                                 axis=0)
-            a, b, c = self.left_line.best_fit
-            plot_y = np.linspace(0, binary_image.shape[0] - 1, binary_image.shape[0])
-            self.left_line.best_x = a * plot_y ** 2 + b * plot_y + c
+                self.consecutive_failures += 1
         else:
             self.left_line.detected = False
+            self.consecutive_failures += 1
 
         if len(self.right_line.ally) > 2:
             right_fit = np.polyfit(self.right_line.ally, self.right_line.allx, 2)
-            if self.right_line.best_fit is None or np.linalg.norm(self.right_line.best_fit - right_fit) < 60:
+            if self.right_line.best_fit is None or np.linalg.norm(self.right_line.best_fit - right_fit) < 200:
                 self.right_line.recent_fit.append(right_fit)
+                self.right_line.best_fit = np.average(self.right_line.recent_fit,
+                                                      weights=range(1, len(self.right_line.recent_fit) + 1),
+                                                      axis=0)
+                a, b, c = self.right_line.best_fit
+                self.right_line.radius_of_curvature = self.compute_roc(a, b)
+                plot_y = np.linspace(0, binary_image.shape[0] - 1, binary_image.shape[0])
+                self.right_line.best_x = a * plot_y ** 2 + b * plot_y + c
                 self.right_line.detected = True
+                self.consecutive_failures = 0
             else:
                 self.right_line.detected = False
-
-            self.right_line.best_fit = np.average(self.right_line.recent_fit,
-                                                  weights=range(1, len(self.right_line.recent_fit)+1),
-                                                  axis=0)
-            a, b, c = self.right_line.best_fit
-            plot_y = np.linspace(0, binary_image.shape[0] - 1, binary_image.shape[0])
-            self.right_line.best_x = a * plot_y ** 2 + b * plot_y + c
+                self.consecutive_failures += 1
         else:
             self.right_line.detected = False
+            self.consecutive_failures += 1
+
+        # Clean history of coefficients if too many failures in a row
+        if self.consecutive_failures >= self.max_failures:
+            self.left_line.recent_fit.clear()
+            self.right_line.recent_fit.clear()
+            self.consecutive_failures = 0
 
         # Update result: OK if both lines were detected and NOT_OK otherwise
         self.last_result = "OK" if self.left_line.detected and self.right_line.detected else "NOT_OK"
@@ -242,19 +262,13 @@ class LaneFinder:
 
         # Generate a polygon to illustrate the search window area
         # And recast the x and y points into usable format for cv2.fillPoly()
-        left_line_window1 = np.array([np.transpose(np.vstack([self.left_line.best_x - self.margin, plot_y]))])
-        left_line_window2 = np.array([np.flipud(np.transpose(np.vstack([self.left_line.best_x + self.margin,
-                                                                        plot_y])))])
-        left_line_pts = np.hstack((left_line_window1, left_line_window2))
+        left_line = np.array([np.transpose(np.vstack([self.left_line.best_x, plot_y]))])
 
-        right_line_window1 = np.array([np.transpose(np.vstack([self.right_line.best_x - self.margin, plot_y]))])
-        right_line_window2 = np.array([np.flipud(np.transpose(np.vstack([self.right_line.best_x + self.margin,
-                                                                         plot_y])))])
-        right_line_pts = np.hstack((right_line_window1, right_line_window2))
+        right_line = np.array([np.flipud(np.transpose(np.vstack([self.right_line.best_x, plot_y])))])
+        lane_pts = np.hstack((left_line, right_line))
 
         # Draw the lane onto the warped blank image
-        cv2.fillPoly(out_img, np.int_([left_line_pts]), (0, 255, 0))
-        cv2.fillPoly(out_img, np.int_([right_line_pts]), (0, 255, 0))
+        cv2.fillPoly(out_img, np.int_([lane_pts]), (0, 255, 255))
 
         cv2.polylines(out_img, [np.int32(list(zip(self.left_line.best_x, plot_y)))], False, (255, 255, 0), 5)
         cv2.polylines(out_img, [np.int32(list(zip(self.right_line.best_x, plot_y)))], False, (255, 255, 0), 5)
@@ -272,13 +286,28 @@ class LaneFinder:
 
     @staticmethod
     def apply_thresholds(rgb_img):
-        dir_binary = dir_thresh(rgb_img, thresh=(0.7, 1.3))
-        hls_binary = hls_s_thresh(rgb_img, thresh=(130, 255))
-        binary_output = np.zeros_like(dir_binary)
-        binary_output[(dir_binary == 1) & (hls_binary == 1)] = 1
-        return binary_output
+        return hsv_v_thresh(rgb_img, thresh=(230, 255))
 
     @staticmethod
     def warp_binary(bin_img):
         warped, M, M_inv = warp_image(bin_img)
         return warped, M, M_inv
+
+    def compute_roc(self, a, b):
+        """Computes the radius of curvature given polynomial coefficients"""
+        # Transform the necessary coefficients to world space in meters
+        am = a * self.xm_pix / (self.ym_pix ** 2)
+        bm = b * self.xm_pix / self.ym_pix
+
+        # Computer RoC as the average of radii at different stations of the lane
+        stations = range(450, 720, 50)
+        radii = [((1 + (2 * am * st * self.ym_pix + bm) ** 2) ** 1.5) / np.absolute(2 * am)
+                 for st in stations]
+        return np.mean(radii)
+
+    def compute_distances(self):
+        left_pos_m = self.left_line.best_x[-1] * self.xm_pix
+        right_pos_m = self.right_line.best_x[-1] * self.xm_pix
+        middle_line = (left_pos_m + right_pos_m) / 2
+        pos_wrt_center = 640 * self.xm_pix - middle_line
+        return pos_wrt_center
