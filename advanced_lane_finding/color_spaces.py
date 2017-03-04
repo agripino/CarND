@@ -38,6 +38,10 @@ def hsv_v_thresh(img, thresh=(0, 255)):
     # Convert to HSV color space
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
+    # Create an object encapsulating the CLAHE parameters
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(50, 50))
+    hsv[:, :, 2] = clahe.apply(hsv[:, :, 2])
+
     # Create binary output mask
     binary_output = np.zeros_like(img[:, :, 2])
     binary_output[(hsv[:, :, 2] >= thresh[0]) & (hsv[:, :, 2] <= thresh[1])] = 1
@@ -46,7 +50,7 @@ def hsv_v_thresh(img, thresh=(0, 255)):
 
 
 if __name__ == "__main__":
-    image = cv2.imread("./test_images/test1.jpg", cv2.IMREAD_UNCHANGED)
+    image = cv2.imread("./test_images/test6.jpg", cv2.IMREAD_UNCHANGED)
 
     hls_thresh = hls_s_thresh(image, (120, 255))
     rgb_thresh = rgb_r_thresh(image, (200, 255))
