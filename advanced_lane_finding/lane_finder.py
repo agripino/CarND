@@ -117,7 +117,9 @@ class LaneFinder:
         cv2.putText(img, "Radius of curvature: {:.0f} m".format((self.left_line.radius_of_curvature +
                                                                 self.right_line.radius_of_curvature) / 2),
                     (360, 50), font, 1, color, thickness=2)
-        cv2.putText(img, "Distance to center: {:.2f} m".format(self.compute_distances()),
+        distance = self.compute_distances()
+        cv2.putText(img, "Vehicle is {:.2f} m {} of center".format(np.abs(distance),
+                                                                   "left" if distance < 0 else "right"),
                     (360, 100), font, 1, color, thickness=2)
 
         return cv2.addWeighted(img, 1, unwarped, 0.2, 0)
