@@ -10,10 +10,10 @@ def warp_image(bin_image):
     # Height
     h = bin_image.shape[0]
 
-    src = np.float32([[(w / 2) - 55, h / 2 + 100],
+    src = np.float32([[(w / 2) - 60, h / 2 + 100],
                       [((w / 6) - 10), h],
-                      [(w * 5 / 6) + 60, h],
-                      [(w / 2 + 55), h / 2 + 100]])
+                      [(w * 5 / 6) + 10, h],
+                      [(w / 2 + 60), h / 2 + 100]])
 
     dst = np.float32([[(w / 4), 0],
                       [(w / 4), h],
@@ -30,7 +30,7 @@ def warp_image(bin_image):
 if __name__ == "__main__":
     img = cv2.imread("./test_images/test6.jpg", cv2.IMREAD_UNCHANGED)
     bin_img = hls_s_thresh(img, (120, 255))
-    warped = warp_image(bin_img)
+    warped, M, Minv = warp_image(bin_img)
 
     fig, (ax1, ax2) = plt.subplots(1, 2)
     ax1.imshow(bin_img, cmap="gray")
