@@ -15,7 +15,7 @@ The goals / steps of this project are the following:
 
 [image1]: ./output_images/undistorted.png "Undistorted"
 [image2]: ./output_images/pipeline_undistorted.png "Road Transformed"
-[image3]: ./examples/binary_combo_example.jpg "Binary Example"
+[image3]: ./output_images/binary_example.png "Binary Example"
 [image4]: ./examples/warped_straight_lines.jpg "Warp Example"
 [image5]: ./examples/color_fit_lines.jpg "Fit Visual"
 [image6]: ./examples/example_output.jpg "Output"
@@ -58,7 +58,10 @@ output of `cv2.undistort(img, mtx, dist)`, where `img` is the original distorted
 The effect of distortion is more noticeable at the periphery of the image.
 
 ####2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
-I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines # through # in `another_file.py`).  Here's an example of my output for this step.  (note: this is not actually from one of the test images)
+I used the HSV color space and Contrast Limited Adaptive Equalization (CLAHE) on the V channel in order to get a binary
+image containing mostly the lane lines. The implementation is the `hsv_v_thresh` function (lines 45 - 57) in the file
+`color_spaces.py`. The function is used in the `apply_thresholds` method of the `LaneFinder` class defined in the file
+`lane_finder.py` (lines 290 - 291). The file `color_spaces.py` contains tests using alternative approaches. Below is a example of a binary image result.
 
 ![alt text][image3]
 
