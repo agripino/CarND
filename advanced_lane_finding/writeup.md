@@ -14,7 +14,7 @@ The goals / steps of this project are the following:
 [//]: # (Image References)
 
 [image1]: ./output_images/undistorted.png "Undistorted"
-[image2]: ./test_images/test1.jpg "Road Transformed"
+[image2]: ./output_images/pipeline_undistorted.png "Road Transformed"
 [image3]: ./examples/binary_combo_example.jpg "Binary Example"
 [image4]: ./examples/warped_straight_lines.jpg "Warp Example"
 [image5]: ./examples/color_fit_lines.jpg "Fit Visual"
@@ -42,15 +42,21 @@ precise image points the script uses `cv2.cornerSubPix` (line 49).
 The function `cv2.calibrateCamera` (line 55) then uses objects and image points to obtain the camera calibration matrix and the
 distortion coefficients. The calibration data is stored in the file `cal_data.p` (line 68) for future use.
 
-This is how a sample image looks like before and after distortion correction using the calibration data:
+This is how a sample image looks like before and after distortion correction using the calibration data and
+the `cv2.undistort` function:
 
 ![alt text][image1]
 
 ###Pipeline (single images)
 
 ####1. Provide an example of a distortion-corrected image.
-To demonstrate this step, I will describe how I apply the distortion correction to one of the test images like this one:
+Given the calibration matrix as `mtx` and distortion coefficients as `dist`, a corrected image can be obtained as the
+output of `cv2.undistort(img, mtx, dist)`, where `img` is the original distorted image. Here is a sample result:
+
 ![alt text][image2]
+
+The effect of distortion is more noticeable at the periphery of the image.
+
 ####2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
 I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines # through # in `another_file.py`).  Here's an example of my output for this step.  (note: this is not actually from one of the test images)
 
