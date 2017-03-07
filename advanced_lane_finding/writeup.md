@@ -18,7 +18,7 @@ The goals / steps of this project are the following:
 [image3]: ./output_images/binary_example.png "Binary Example"
 [image4]: ./output_images/warped_lines.png "Warp Example"
 [image5]: ./output_images/color_fit_lines.png "Fit Visual"
-[image6]: ./examples/example_output.jpg "Output"
+[image6]: ./output_images/example_output.png "Output"
 [video1]: ./project_video.mp4 "Video"
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/571/view) Points
@@ -125,7 +125,9 @@ calculated as the mean of radii calculated at 5 stations in the bottom of the li
 
 ####6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 
-I implemented this step in lines # through # in my code in `yet_another_file.py` in the function `map_lane()`.  Here is an example of my result on a test image:
+I implemented this step at the end of the method `LaneFinder.__call__` (lines 89 - 127 of `lane_finder.py`), which
+contains the entire pipeline. That made possible to pass a `LaneFinder` object directly to
+`moviepy.editor.VideoFileClip.fl_image` in order to generate a video with the processed frames. Here is an example of my result on a test image:
 
 ![alt text][image6]
 
