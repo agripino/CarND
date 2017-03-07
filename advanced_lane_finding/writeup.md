@@ -61,7 +61,8 @@ The effect of distortion is more noticeable at the periphery of the image.
 I used the HSV color space and Contrast Limited Adaptive Equalization (CLAHE) on the V channel in order to get a binary
 image containing mostly the lane lines. The implementation is the `hsv_v_thresh` function (lines 45 - 57) in the file
 `color_spaces.py`. The function is used in the `apply_thresholds` method of the `LaneFinder` class defined in the file
-`lane_finder.py` (lines 290 - 291). The file `color_spaces.py` contains tests using alternative approaches. Below is a example of a binary image result.
+`lane_finder.py` (lines 290 - 291). The file `color_spaces.py` contains tests using alternative approaches. Below is a
+example of a binary image result.
 
 ![alt text][image3]
 
@@ -92,24 +93,26 @@ This resulted in the following source and destination points:
 | 1076, 720     | 960, 720      |
 | 700, 460      | 960, 0        |
 
-I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
+I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image
+and its warped counterpart to verify that the lines appear parallel in the warped image.
 
 ![alt text][image4]
 
 ####4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial.
 
-There are 2 methods in the class `LaneFider` (file `lane_finder.py`) dedicated to the identification of lane line pixels. Those are
-`LaneFinder.blind_search` (lines 127 - 183) and `LaneFinder.track_lines` (lines 185 - 206). The former uses a histogram
-of the lower half of the image to identify the base x coordinate of each line and then uses search windows to find the
-remaining pixels. The latter looks for pixels in the vicinity of the best estimate of each line given previous frames.
+There are 2 methods in the class `LaneFider` (file `lane_finder.py`) dedicated to the identification of lane line
+pixels. Those are `LaneFinder.blind_search` (lines 127 - 183) and `LaneFinder.track_lines` (lines 185 - 206). The former
+uses a histogram of the lower half of the image to identify the base x coordinate of each line and then uses search
+windows to find the remaining pixels. The latter looks for pixels in the vicinity of the best estimate of each line
+given previous frames.
 
 The method `LaneFinder.fit_poly` (lines 208 - 258) fits a 2nd degree polynomial to the set of identified pixels of each
 line. It also updates the state of the last fit, so that the next search can be a blind search, if there was not a
 good fit for any of the lines, or just the tracking around the best estimates at that point. If the detection fails a
 certain number of consecutive times, the history of fitted coefficients is erased and a blind search is performed.
 
-The method `LaneFinder.draw_lines` (lines 260 - 281) is responsible for plotting the line pixels and fitted polynomials to the binary
-warped image. The result looks like the image below.
+The method `LaneFinder.draw_lines` (lines 260 - 281) is responsible for plotting the line pixels and fitted polynomials
+to the binary warped image. The result looks like the image below.
 
 ![alt text][image5]
 
@@ -127,7 +130,8 @@ calculated as the mean of radii calculated at 5 stations in the bottom of the li
 
 I implemented this step at the end of the method `LaneFinder.__call__` (lines 89 - 127 of `lane_finder.py`), which
 contains the entire pipeline. That made possible to pass a `LaneFinder` object directly to
-`moviepy.editor.VideoFileClip.fl_image` in order to generate a video with the processed frames. Here is an example of my result on a test image:
+`moviepy.editor.VideoFileClip.fl_image` in order to generate a video with the processed frames. Here is an example of my
+result on a test image:
 
 ![alt text][image6]
 
@@ -145,5 +149,12 @@ Here's a [link to my video result](./videos/project_video_annotated.mp4)
 
 ####1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+Applying distortion correction and perspective warping was very effective to obtain an accurate bird's eye view of the
+road. That made the identification of lane line pixels much easier. Several thresholding approaches were tried and
+using a simple threshold on the HSV V channel after Contrast Limited Adaptive Histogram Equalization apparently produced
+the best result in terms of keeping most of the lines, which was important in order to get a consistent polynomial fit
+across frames.
 
+However, under extreme lighting conditions the pipeline may fail. To tackled that problem the inclusion of gradient
+direction/magnitude thresholds could be used together with a more judicious image preprocessing step. Maybe using
+adaptive thresholds based on image histograms could be useful.
