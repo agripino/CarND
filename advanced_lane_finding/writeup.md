@@ -115,7 +115,13 @@ warped image. The result looks like the image below.
 
 ####5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
-I did this in lines # through # in my code in `my_other_file.py`
+I did this in methods `LaneFinder.computer_roc` (lines 304 - 314) and `LaneFinder.compute_distance` (lines 316 - 330) in
+the file `lane_finder.py`.
+
+The `LaneFinder.compute_roc` method uses scale factors defined as attributes of the
+`LaneFinder` class to transform the polynomial coefficients so that the distance unit used is the meter. This
+transformation was found by simple substitution in the polynomial equation. The radius of curvature of each line is
+calculated as the mean of radii calculated at 5 stations in the bottom of the line.
 
 ####6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 

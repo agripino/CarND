@@ -80,8 +80,10 @@ class LaneFinder:
         # Maximum number of failed detections allowed before doing blind search
         self.max_failures = 5
 
+        # Scale factor: meters per pixel in y direction
         self.ym_pix = 30. / 720
 
+        # Scale factor: Meters per pixel in x direction
         self.xm_pix = 3.7 / 700
 
     def __call__(self, img):
@@ -117,7 +119,7 @@ class LaneFinder:
         cv2.putText(img, "Radius of curvature: {:.0f} m".format((self.left_line.radius_of_curvature +
                                                                 self.right_line.radius_of_curvature) / 2),
                     (360, 50), font, 1, color, thickness=2)
-        distance = self.compute_distances()
+        distance = self.compute_distance()
         cv2.putText(img, "Vehicle is {:.2f} m {} of center".format(np.abs(distance),
                                                                    "left" if distance < 0 else "right"),
                     (360, 100), font, 1, color, thickness=2)
@@ -258,6 +260,8 @@ class LaneFinder:
         self.last_result = "OK" if self.left_line.detected and self.right_line.detected else "NOT_OK"
 
     def draw_lines(self, binary_warped):
+        """Draws line pixels and fitted polynomials to a binary warped image"""
+
         out_img = np.dstack((binary_warped, binary_warped, binary_warped)) * 255
 
         plot_y = np.linspace(0, binary_warped.shape[0] - 1, binary_warped.shape[0])
@@ -304,14 +308,23 @@ class LaneFinder:
         bm = b * self.xm_pix / self.ym_pix
 
         # Computer RoC as the average of radii at different stations of the lane
-        stations = range(450, 720, 50)
+        stations = range(500, 720, 50)
         radii = [((1 + (2 * am * st * self.ym_pix + bm) ** 2) ** 1.5) / np.absolute(2 * am)
                  for st in stations]
         return np.mean(radii)
 
-    def compute_distances(self):
+    def compute_distance(self):
+        """Computes the position of the vehicle camera w.r.t. the lane center"""
+        # Position of the left line base in meters from the left of the image
         left_pos_m = self.left_line.best_x[-1] * self.xm_pix
+
+        # Position of the right line base in meters from the left of the image
         right_pos_m = self.right_line.best_x[-1] * self.xm_pix
+
+        # Position in meters of the lane center
         middle_line = (left_pos_m + right_pos_m) / 2
+
+        # Center of the image (camera position) w.r.t. lane center
         pos_wrt_center = 640 * self.xm_pix - middle_line
+
         return pos_wrt_center
