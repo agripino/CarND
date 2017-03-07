@@ -272,11 +272,13 @@ class LaneFinder:
         # Draw the lane onto the warped blank image
         cv2.fillPoly(out_img, np.int_([lane_pts]), (0, 255, 255))
 
-        cv2.polylines(out_img, [np.int32(list(zip(self.left_line.best_x, plot_y)))], False, (255, 255, 0), 5)
-        cv2.polylines(out_img, [np.int32(list(zip(self.right_line.best_x, plot_y)))], False, (255, 255, 0), 5)
-
+        # Color left line pixels red and right line pixels blue
         out_img[self.left_line.ally, self.left_line.allx] = [255, 0, 0]
         out_img[self.right_line.ally, self.right_line.allx] = [0, 0, 255]
+
+        # Daw fitted polynomials
+        cv2.polylines(out_img, [np.int32(list(zip(self.left_line.best_x, plot_y)))], False, (255, 255, 0), 2)
+        cv2.polylines(out_img, [np.int32(list(zip(self.right_line.best_x, plot_y)))], False, (255, 255, 0), 2)
 
         return out_img
 

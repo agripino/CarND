@@ -17,7 +17,7 @@ The goals / steps of this project are the following:
 [image2]: ./output_images/pipeline_undistorted.png "Road Transformed"
 [image3]: ./output_images/binary_example.png "Binary Example"
 [image4]: ./output_images/warped_lines.png "Warp Example"
-[image5]: ./examples/color_fit_lines.jpg "Fit Visual"
+[image5]: ./output_images/color_fit_lines.png "Fit Visual"
 [image6]: ./examples/example_output.jpg "Output"
 [video1]: ./project_video.mp4 "Video"
 
@@ -82,7 +82,6 @@ dst = np.float32([[(w / 4), 0],
                   [(w / 4), h],
                   [(w * 3 / 4), h],
                   [(w * 3 / 4), 0]])
-
 ```
 This resulted in the following source and destination points:
 
@@ -99,7 +98,18 @@ I verified that my perspective transform was working as expected by drawing the 
 
 ####4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial.
 
-Then I did some other stuff and fit my lane lines with a 2nd order polynomial kinda like this:
+There are 2 methods in the class `LaneFider` (file `lane_finder.py`) dedicated to the identification of lane line pixels. Those are
+`LaneFinder.blind_search` (lines 127 - 183) and `LaneFinder.track_lines` (lines 185 - 206). The former uses a histogram
+of the lower half of the image to identify the base x coordinate of each line and then uses search windows to find the
+remaining pixels. The latter looks for pixels in the vicinity of the best estimate of each line given previous frames.
+
+The method `LaneFinder.fit_poly` (lines 208 - 258) fits a 2nd degree polynomial to the set of identified pixels of each
+line. It also updates the state of the last fit, so that the next search can be a blind search, if there was not a
+good fit for any of the lines, or just the tracking around the best estimates at that point. If the detection fails a
+certain number of consecutive times, the history of fitted coefficients is erased and a blind search is performed.
+
+The method `LaneFinder.draw_lines` (lines 260 - 281) is responsible for plotting the line pixels and fitted polynomials to the binary
+warped image. The result looks like the image below.
 
 ![alt text][image5]
 
