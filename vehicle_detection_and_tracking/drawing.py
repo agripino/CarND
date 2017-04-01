@@ -17,7 +17,7 @@ def draw_boxes(img, bboxes, color=(0, 255, 0), thick=6, line_type=cv2.LINE_AA):
 
 
 if __name__ == "__main__":
-    image = mpimg.imread("bbox-example-image.jpg")
+    image = mpimg.imread("cutouts/bbox-example-image.jpg")
 
     bboxes = [((270, 490), (395, 580)), ((475, 495), (565, 575)),  ((849, 678), (1135, 512))]
 
