@@ -52,7 +52,7 @@ def extract_features(img):
                                          cell_per_block=2, vis=False, feature_vec=True,
                                          transform_sqrt=True)
 
-    spatial_features = bin_spatial(img, color_space='HLS', size=(24, 24))
+    spatial_features = bin_spatial(img, color_space='HLS', size=(16, 16))
 
     return np.hstack((spatial_features, gray_hog_features))
 
