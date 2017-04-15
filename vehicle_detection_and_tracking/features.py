@@ -83,7 +83,32 @@ def plot_hog_image():
     plt.show()
 
 
+def create_sample_hog_vis(color_space="YCrCb", orient=9, pix_per_cell=8, cell_per_block=2):
+    car_image = mpimg.imread("output_images/noncar_sample.png")
+    img = cv2.cvtColor(car_image, cs_dict[color_space])
+    if color_space == "GRAY":
+        hog_gray, vis_gray = get_hog_features(img, orient=orient, pix_per_cell=pix_per_cell,
+                                              cell_per_block=cell_per_block, vis=True,
+                                              feature_vec=True, transform_sqrt=True)
+        mpimg.imsave("output_images/hog_vis_gray.png", vis_gray, cmap='gray')
+    else:
+        hog_ch1, vis_1 = get_hog_features(img[:, :, 0], orient=orient, pix_per_cell=pix_per_cell,
+                                          cell_per_block=cell_per_block, vis=True, feature_vec=True,
+                                          transform_sqrt=True)
+        hog_ch2, vis_2 = get_hog_features(img[:, :, 1], orient=orient, pix_per_cell=pix_per_cell,
+                                          cell_per_block=cell_per_block, vis=True, feature_vec=True,
+                                          transform_sqrt=True)
+        hog_ch3, vis_3 = get_hog_features(img[:, :, 2], orient=orient, pix_per_cell=pix_per_cell,
+                                          cell_per_block=cell_per_block, vis=True, feature_vec=True,
+                                          transform_sqrt=True)
+        mpimg.imsave("output_images/noncar_hog_vis_ch1.png", vis_1, cmap='gray')
+        mpimg.imsave("output_images/noncar_hog_vis_ch2.png", vis_2, cmap='gray')
+        mpimg.imsave("output_images/noncar_hog_vis_ch3.png", vis_3, cmap='gray')
+
+
 if __name__ == '__main__':
     get_spatial_features()
 
     plot_hog_image()
+
+    create_sample_hog_vis()
