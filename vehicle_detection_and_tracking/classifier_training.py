@@ -5,11 +5,11 @@ import matplotlib.image as mpimg
 import numpy as np
 from tqdm import tqdm
 import sys
-from sklearn.model_selection import train_test_split, RandomizedSearchCV
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import shuffle
 from sklearn.svm import SVC
-from features import get_hog_features, bin_spatial, extract_features
+from features import extract_features
 
 
 def get_preprocessed_data():

@@ -47,17 +47,14 @@ def get_hog_features(img, orient, pix_per_cell, cell_per_block, vis=False,
 def extract_features(img):
     """img is represented in the RGB color space.
     """
-    img_hls = cv2.cvtColor(img, cv2.COLOR_RGB2HLS)
-
-    ch_l_hog_features = get_hog_features(img_hls[:, :, 1], orient=9, pix_per_cell=8,
+    img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    gray_hog_features = get_hog_features(img_gray, orient=9, pix_per_cell=8,
                                          cell_per_block=2, vis=False, feature_vec=True,
                                          transform_sqrt=True)
-    ch_s_hog_features = get_hog_features(img_hls[:, :, 2], orient=9, pix_per_cell=8,
-                                         cell_per_block=2, vis=False, feature_vec=True,
-                                         transform_sqrt=True)
-    spatial_features = bin_spatial(img, color_space='LUV', size=(24, 24))
 
-    return np.hstack((spatial_features, ch_l_hog_features, ch_s_hog_features))
+    spatial_features = bin_spatial(img, color_space='HLS', size=(24, 24))
+
+    return np.hstack((spatial_features, gray_hog_features))
 
 
 def get_spatial_features():
