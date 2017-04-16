@@ -34,12 +34,12 @@ def get_hog_features(img, orient, pix_per_cell, cell_per_block, vis=False,
     """
     if vis:
         features, hog_image = hog(img, orient, (pix_per_cell, pix_per_cell),
-                                  (cell_per_block, cell_per_block), True,
+                                  (cell_per_block, cell_per_block), block_norm='L2-Hys', visualise=True,
                                   transform_sqrt=transform_sqrt, feature_vector=feature_vec)
         return features, hog_image
     else:
         features = hog(img, orient, (pix_per_cell, pix_per_cell),
-                       (cell_per_block, cell_per_block), False,  # no hog image
+                       (cell_per_block, cell_per_block), block_norm='L2-Hys', visualise=False,  # no hog image
                        transform_sqrt=transform_sqrt, feature_vector=feature_vec)
         return features
 
@@ -84,7 +84,7 @@ def plot_hog_image():
 
 
 def create_sample_hog_vis(color_space="YCrCb", orient=9, pix_per_cell=8, cell_per_block=2):
-    car_image = mpimg.imread("output_images/noncar_sample.png")
+    car_image = mpimg.imread("output_images/car_sample.png")
     img = cv2.cvtColor(car_image, cs_dict[color_space])
     if color_space == "GRAY":
         hog_gray, vis_gray = get_hog_features(img, orient=orient, pix_per_cell=pix_per_cell,
@@ -101,9 +101,9 @@ def create_sample_hog_vis(color_space="YCrCb", orient=9, pix_per_cell=8, cell_pe
         hog_ch3, vis_3 = get_hog_features(img[:, :, 2], orient=orient, pix_per_cell=pix_per_cell,
                                           cell_per_block=cell_per_block, vis=True, feature_vec=True,
                                           transform_sqrt=True)
-        mpimg.imsave("output_images/noncar_hog_vis_ch1.png", vis_1, cmap='gray')
-        mpimg.imsave("output_images/noncar_hog_vis_ch2.png", vis_2, cmap='gray')
-        mpimg.imsave("output_images/noncar_hog_vis_ch3.png", vis_3, cmap='gray')
+        mpimg.imsave("output_images/car_hog_vis_ch1.png", vis_1, cmap='gray')
+        mpimg.imsave("output_images/car_hog_vis_ch2.png", vis_2, cmap='gray')
+        mpimg.imsave("output_images/car_hog_vis_ch3.png", vis_3, cmap='gray')
 
 
 if __name__ == '__main__':
