@@ -34,12 +34,12 @@ def get_hog_features(img, orient, pix_per_cell, cell_per_block, vis=False,
     """
     if vis:
         features, hog_image = hog(img, orient, (pix_per_cell, pix_per_cell),
-                                  (cell_per_block, cell_per_block), block_norm='L2-Hys', visualise=True,
+                                  (cell_per_block, cell_per_block), block_norm='L1', visualise=True,
                                   transform_sqrt=transform_sqrt, feature_vector=feature_vec)
         return features, hog_image
     else:
         features = hog(img, orient, (pix_per_cell, pix_per_cell),
-                       (cell_per_block, cell_per_block), block_norm='L2-Hys', visualise=False,  # no hog image
+                       (cell_per_block, cell_per_block), block_norm='L1', visualise=False,  # no hog image
                        transform_sqrt=transform_sqrt, feature_vector=feature_vec)
         return features
 
