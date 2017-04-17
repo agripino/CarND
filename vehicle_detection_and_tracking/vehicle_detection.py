@@ -1,6 +1,6 @@
 import pickle
 from moviepy.editor import VideoFileClip
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from drawing import draw_boxes
 
 
@@ -13,7 +13,7 @@ def find_cars(inputs):
 
 
 class VehicleDetector:
-    def __init__(self, classifier, scaler, n_procs=7):
+    def __init__(self, classifier, scaler, n_procs=cpu_count()):
         self.classifier = classifier
         self.scaler = scaler
         self.proc_pool = Pool(n_procs)
