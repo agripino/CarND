@@ -22,6 +22,14 @@ The goals / steps of this project are the following:
 [image10]: ./output_images/sample_pipeline1.png
 [image11]: ./output_images/sample_pipeline2.png
 [image12]: ./output_images/sample_pipeline3.png
+[image13]: ./output_images/heatmap0.png
+[image14]: ./output_images/heatmap1.png
+[image15]: ./output_images/heatmap2.png
+[image16]: ./output_images/heatmap3.png
+[image17]: ./output_images/heatmap4.png
+[image18]: ./output_images/heatmap5.png
+[image19]: ./output_images/labels.png
+[image20]: ./output_images/bounding_boxes.png
 [video11]: ./videos/project_video_annotated.mp4
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/513/view) Points
@@ -120,25 +128,31 @@ Here's a [link to my video result](./videos/project_video_annotated.mp4)
 
 ####2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
-I recorded the positions of positive detections in each frame of the video.  From the positive detections I created a
-heatmap and then thresholded that map to identify vehicle positions.  I then used `scipy.ndimage.measurements.label()`
-to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed
-bounding boxes to cover the area of each blob detected.  
+I recorded the positions of positive detections for each search region and for each frame along 10 frames in the
+integrated detections variable (line 11 of the the file `vehicle_detection.py`).
+
+From the positive detections I created a heatmap and then thresholded that map to identify vehicle positions (lines 117
+to 123 of `vehicle_detection.py`). I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the
+heatmap (line 126 of `vehicle_detection.py`). I then assumed each blob corresponded to a vehicle. I constructed bounding
+boxes to cover the area of each blob detected (line 128 of the same file).
 
 Here's an example result showing the heatmap from a series of frames of video, the result of
 `scipy.ndimage.measurements.label()` and the bounding boxes then overlaid on the last frame of video:
 
 ### Here are six frames and their corresponding heatmaps:
 
-![alt text][image5]
+![alt text][image13]
+![alt text][image14]
+![alt text][image15]
+![alt text][image16]
+![alt text][image17]
+![alt text][image18]
 
 ### Here is the output of `scipy.ndimage.measurements.label()` on the integrated heatmap from all six frames:
-![alt text][image6]
+![alt text][image19]
 
 ### Here the resulting bounding boxes are drawn onto the last frame in the series:
-![alt text][image7]
-
-
+![alt text][image20]
 
 ---
 
@@ -146,5 +160,17 @@ Here's an example result showing the heatmap from a series of frames of video, t
 
 ####1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+The main problem faced during implementation was the time required to run the pipeline, even if multiprocessing was used.
+That led me to use a single search region.
 
+In order to get tighter boxes wrapping the cars, it would be necessary to use smaller scales combined with smaller, more
+selective search regions, also limited in the x axis, for example.
+
+Variable light conditions may affect the pipeline negatively. A square root transform could be included during HOG
+feature extraction in order to tackle this problem. Here it was not used in an attempt to speed up execution time.
+
+The pipeline could run on each search region using a different thread, and good choices of region limits and scales would
+distributed the computational load evenly among threads.
+
+To increase robustness I would also take a more systematic approach to define the features and the classification method used
+so as to obtain a better classifier.
