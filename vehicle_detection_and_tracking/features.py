@@ -3,7 +3,7 @@ import cv2
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from skimage.feature import hog
-
+from histograms import get_hist_features
 
 cs_dict = {
     'HSV': cv2.COLOR_RGB2HSV,
@@ -27,8 +27,8 @@ def bin_spatial(img, color_space='RGB', size=(32, 32)):
 
 
 def get_hog_features(img, orient, pix_per_cell, cell_per_block, vis=False,
-                     feature_vec=False, transform_sqrt=True):
-    """Computes HOG features of an image.
+                     feature_vec=False, transform_sqrt=False):
+    """Computes HOG features of a single image channel.
     
     Returns a visualization of the features if vis is set to True.
     """
@@ -50,11 +50,11 @@ def extract_features(img):
     img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     gray_hog_features = get_hog_features(img_gray, orient=9, pix_per_cell=8,
                                          cell_per_block=2, vis=False, feature_vec=True,
-                                         transform_sqrt=True)
+                                         transform_sqrt=False)
 
-    spatial_features = bin_spatial(img, color_space='HLS', size=(16, 16))
+    hist_features = get_hist_features(cv2.cvtColor(img, cv2.COLOR_RGB2HLS), bins=8)
 
-    return np.hstack((spatial_features, gray_hog_features))
+    return np.hstack((hist_features, gray_hog_features))
 
 
 def get_spatial_features():

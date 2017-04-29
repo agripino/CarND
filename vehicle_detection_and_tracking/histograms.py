@@ -19,6 +19,18 @@ def color_hist(img, bins=32, bins_range=(0, 256)):
     return red_hist, green_hist, blue_hist, bin_centers, hist_features
 
 
+def get_hist_features(img, bins=32, bins_range=(0, 256)):
+    # Compute the histogram of each channel
+    ch1_hist = np.histogram(img[:, :, 0], bins=bins, range=bins_range)
+    ch2_hist = np.histogram(img[:, :, 1], bins=bins, range=bins_range)
+    ch3_hist = np.histogram(img[:, :, 2], bins=bins, range=bins_range)
+
+    # Concatenate histograms into a single feature vector
+    hist_features = np.concatenate((ch1_hist[0], ch2_hist[0], ch3_hist[0]))
+
+    return hist_features
+
+
 if __name__ == "__main__":
     image = mpimg.imread("cutouts/cutout1.jpg")
 

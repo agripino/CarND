@@ -83,5 +83,6 @@ def train_classifier():
     score = clf.score(test_features, test_labels)
     print("Classifier score on test data: {:.4f}".format(score))
 
+
 if __name__ == "__main__":
     train_classifier()
