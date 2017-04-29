@@ -170,7 +170,7 @@ Variable light conditions may affect the pipeline negatively. A square root tran
 feature extraction in order to tackle this problem. Here it was not used in an attempt to speed up execution time.
 
 The pipeline could run on each search region using a different thread, and good choices of region limits and scales would
-distributed the computational load evenly among threads.
+distribute the computational load evenly among threads.
 
 To increase robustness I would also take a more systematic approach to define the features and the classification method used
 so as to obtain a better classifier.
